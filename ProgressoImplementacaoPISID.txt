@@ -1,0 +1,68 @@
+
+
+Criei 3 scripts diferentes: mqtt_to_mongo, mongo_to_mqtt, mqtt_to_mysql (1 segundo periodicidade/ qos=1)
+Quando se corre o jogo o tempo de delay tem de ser 1s.
+
+Criei um boolean no Mongodb para tratar os duplicados. Sempre que um dado é inserido no mongo, este boolean ("enviado") é posto a "false". 
+Quando a passagem do dado é feita para o mqtt, o boolean é colocado a "true" de modo a indicar que aquele dado já foi enviado.
+
+
+
+
+valores anómalos: (tratado no script)
+Data futura: se a data da mensagem (Hour, por exemplo) estiver à frente da data/hora atual.
+
+Campo Sound (ou numérico) como texto: "45" em vez de 45.
+
+Campo Hour com valor inteiro em vez de data (timestamp ou erro de tipo).
+
+Campos obrigatórios e seus tipos (RoomOrigin, RoomDestiny, Marsami, Status, Hour)
+
+Hora inválida (formato incorreto ou no futuro)
+
+Campos numéricos vindos como strings ou em tipos errados
+
+
+
+
+outliers de ruido: (tratado no script)
+-Um valor de ruído é considerado outlier caso apresente uma variação brusca e não coerente em relação à média das últimas medições recebidas no jogo. A média é calculada com base nos últimos 3(talvez colocar mais) valores para garantir que variações naturais do ruído não gerem falsos positivos.
+A deteção de outliers ocorre quando um valor se desvia significativamente da média, ultrapassando um intervalo de três vezes o desvio padrão (±3σ). Este método garante que apenas variações altamente incomuns sejam identificadas como outliers.
+(os valores nao sao enviados para o mongo)
+
+Uma mensagem de ruído é ainda inválida se:
+- O ruído for vazio, 0 ou negativo 
+
+
+
+
+-Campo Tentativas adicionado a tabela ocupacaolabirinto (vai ser incrementado sempre que chamarmos um atuador)
+
+-Criado trigger para adicionar dados à tabela ocupacaolabirinto, mas falta tratar as situacoes em que sala 0->sala0, etc. (este trigger é chamado sempre que se inserem dados de movimento no mysql e vai alterando as medições odd e even da tabela ocupacaolabirinto)
+
+Criado sp CriarUtilizador: como chamar: CALL CriarUtilizador('João Silva', 'Adm', 'joao.silva@iscte.com'); [nome,tipo,email]
+criado sp alterar jogo (altera pontuacao e estado) CALL AlterarJogo(1, 10, 2); [id,pontuacao,estado] - coloca-se NULL nos campos que nao se quer editar.
+criado sp Editar utilizador (altera nome, tipo, email) CALL EditarUtilizador(5, 'João Silva', 'admin', 'joao@email.com'); [id,nome,tipo,email] - coloca-se NULL nos campos que nao se quer editar.
+
+aceder html atraves do xampp: http://localhost/pisid/login.html
+
+Ligação feita ao mysql nuvem para verificar salas movimentos possiveis entre salas conectadas.
+
+boolean atuadorAcionado na tabela mensagens.
+
+Trigger para adicionar linha a tabela mensagens sempre que odd=even na tabela ocupacaolabirinto.
+
+Script atuadores que fica a espera de notificacao da tabela mensagens para enviar mensagem mqtt para fechar porta. - ERRADO (O ATUADOR É A MENSAGEM PONTUACAO) FECHAR AS PORTAS SO SERVE PARA DIMINUIR O SOM
+
+
+
+Criar as 3 roles e sp para atribuir utilizadores as roles e colocar dados na tabela utilizador. Nao funciona como esperado entao nao por.
+
+
+
+
+Criado SP criarUtilizador. Sempre que se cria utilizador, adiciona-se na tabela utilizador e é possivel dar login com este na bd. É criada uma view tambem que permite a este jogador visualizar os seus proprios jogos na BD. 
+O sp q cria utilizador da logo permissoes ao user para usar os sp
+É criado sp que altera dados do jogo e verifica qual o utilizador logado. Caso tenha permissao altera.
+ e evita tb spam
+alterado trigger de alertas sons: sempre que som passa de 21 faz alerta para fechar portas e verifica se ja existe um nos ultimos 5 segundos para evitar spam. Sempre que desce de 20 faz alerta para abrir portas e evita tb spam
